@@ -1,23 +1,17 @@
 # frozen_string_literal: true
 
+require 'active_record'
 require_relative 'scope_data/base'
 require_relative 'scope_data/scope'
 require_relative 'scope_data/variable'
 
 module RubyLanguageServer
-  class CodeFile
-    attr_reader :uri
-    attr_reader :text
+  class CodeFile < ActiveRecord::Base
+    attr_accessor :uri
+    attr_accessor :text
     attr_reader :lint_found
 
-    def initialize(uri, text)
-      RubyLanguageServer.logger.debug("CodeFile initialize #{uri}")
-      @uri = uri
-      @text = text
-      @refresh_root_scope = true
-    end
-
-    def text=(new_text)
+    def text=(new_text) # rubocop:disable Lint/DuplicateMethods
       RubyLanguageServer.logger.debug("text= for #{uri}")
       if @text == new_text
         RubyLanguageServer.logger.debug('IT WAS THE SAME!!!!!!!!!!!!')

@@ -42,8 +42,10 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'rubocop'
   spec.add_dependency 'rubocop-rspec' # Linter - no longer needed - use additional gems?
 
+  spec.add_dependency 'activerecord'
   spec.add_dependency 'amatch'      # in c
   spec.add_dependency 'fuzzy_match' # completion matching
+  spec.add_dependency 'sqlite3', '~> 1.3.6' # for some reason 1.4.0 don't work - try again with AR > 5.2.2
 
   spec.add_development_dependency 'guard'
   spec.add_development_dependency 'guard-minitest'

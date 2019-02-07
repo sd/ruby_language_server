@@ -92,7 +92,7 @@ module RubyLanguageServer
         [self, parent&.self_and_ancestors].flatten.compact
       end
 
-      def set_superclass_name(partial)
+      def superclass_name=(partial) # rubocop:disable Lint/DuplicateMethods
         if partial.start_with?('::')
           @superclass_name = partial.gsub(/^::/, '')
         else

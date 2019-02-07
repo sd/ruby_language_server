@@ -61,7 +61,7 @@ module RubyLanguageServer
 
     def code_file_for_uri(uri, text = nil)
       code_file = @uri_code_file_hash[uri]
-      code_file = @uri_code_file_hash[uri] = CodeFile.new(uri, text) if code_file.nil?
+      code_file = @uri_code_file_hash[uri] = CodeFile.create!(uri: uri, text: text) if code_file.nil?
       code_file
     end
 

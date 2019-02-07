@@ -9,6 +9,7 @@ LABEL maintainer="kurt@CircleW.org"
 RUN apk update
 RUN apk add make
 RUN apk add g++
+RUN apk add sqlite-dev
 
 WORKDIR /app
 

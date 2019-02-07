@@ -5,6 +5,7 @@ require 'minitest/autorun'
 
 describe RubyLanguageServer::ProjectManager do
   before do
+    ENV['RUBY_LANGUAGE_SERVER_PROJECT_ROOT'] = nil
   end
 
   let(:pm) { RubyLanguageServer::ProjectManager.new('/foo') }

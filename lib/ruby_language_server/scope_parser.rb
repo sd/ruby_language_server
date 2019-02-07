@@ -107,7 +107,7 @@ module RubyLanguageServer
       return unless !sexp[0].nil? && sexp[0][0] == :var_ref
 
       (_, (_, name)) = sexp[0]
-      scope.set_superclass_name(name)
+      scope.superclass_name = (name)
     end
 
     def on_method_add_block(args, rest)
@@ -138,7 +138,7 @@ module RubyLanguageServer
     def on_var_ref(_args, _rest)
       # [:@const, "Bar", [13, 20]]
       # (_, name) = args
-      # @current_scope.set_superclass_name(name)
+      # @current_scope.superclass_name=(name)
     end
 
     def on_assign(args, rest)

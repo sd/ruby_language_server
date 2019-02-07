@@ -6,7 +6,7 @@ require 'minitest/autorun'
 describe RubyLanguageServer::CodeFile do
   describe 'CodeFile' do
     it 'must init' do
-      RubyLanguageServer::CodeFile.new('uri', "class Foo\nend\n")
+      RubyLanguageServer::CodeFile.create!(uri: 'uri', text: "class Foo\nend\n")
     end
 
     describe 'tags' do
@@ -28,7 +28,7 @@ describe RubyLanguageServer::CodeFile do
       let(:tags) { code_file(source).tags }
 
       def code_file(text)
-        RubyLanguageServer::CodeFile.new('uri', text)
+        RubyLanguageServer::CodeFile.new(uri: 'uri', text: text)
       end
 
       it 'should find classes' do
