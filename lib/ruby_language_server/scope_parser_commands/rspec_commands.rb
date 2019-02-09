@@ -16,10 +16,10 @@ module RubyLanguageServer
       def rspec_block_command(prefix, line, args, rest)
         name = "#{prefix} "
         name += rest.flatten.select { |part| part.instance_of?(String) }.join('::')
-        push_scope(ScopeData::Scope::TYPE_MODULE, name, line, 0, false)
+        push_scope(ScopeData::CodeScope::KIND_MODULE, name, line, 0, false)
         process(args)
         process(rest)
-        # We push a scope and don't pop it because we're called inside on_method_add_block
+        # We push a code_scope and don't pop it because we're called inside on_method_add_block
       end
     end
   end

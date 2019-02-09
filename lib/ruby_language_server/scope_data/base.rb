@@ -2,27 +2,27 @@
 
 module RubyLanguageServer
   module ScopeData
-    class Base
-      TYPE_MODULE = :module
-      TYPE_CLASS = :class
-      TYPE_METHOD = :method
-      TYPE_BLOCK = :block
-      TYPE_ROOT = :root
-      TYPE_VARIABLE = :variable
+    module Base
+      KIND_MODULE = :module
+      KIND_CLASS = :class
+      KIND_METHOD = :method
+      KIND_BLOCK = :block
+      KIND_ROOT = :root
+      KIND_VARIABLE = :variable
 
       JoinHash = {
-        TYPE_MODULE => '::',
-        TYPE_CLASS => '::',
-        TYPE_METHOD => '#',
-        TYPE_BLOCK => '>',
-        TYPE_ROOT => '',
-        TYPE_VARIABLE => '^'
+        KIND_MODULE => '::',
+        KIND_CLASS => '::',
+        KIND_METHOD => '#',
+        KIND_BLOCK => '>',
+        KIND_ROOT => '',
+        KIND_VARIABLE => '^'
       }.freeze
 
-      attr_accessor :type # Type of this scope (module, class, block)
+      attr_accessor :kind # Type of this code_scope (module, class, block)
 
       def method?
-        type == TYPE_METHOD
+        kind == KIND_METHOD
       end
     end
   end

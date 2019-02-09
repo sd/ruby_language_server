@@ -44,37 +44,37 @@ module RubyLanguageServer
       end
 
       def scope_with_name(name, scopes)
-        scopes.detect { |scope| scope.name == name }
+        scopes.detect { |code_scope| code_scope.name == name }
       end
 
       def scope_completions_in_target_context(context, context_scope, scopes)
         working_array = context.dup
         context_word = working_array[-2]
         if context_word.match?(/^[A-Z]/)
-          scope = scope_with_name(context_word, scopes)
+          code_scope = scope_with_name(context_word, scopes)
         else
           context_word = context_word.split(/_/).map(&:capitalize).join('')
-          scope = scope_with_name(context_word, scopes)
-          RubyLanguageServer.logger.debug("scope_with_name: #{scope}")
+          code_scope = scope_with_name(context_word, scopes)
+          RubyLanguageServer.logger.debug("scope_with_name: #{code_scope}")
         end
-        scope ||= context_scope
-        RubyLanguageServer.logger.debug("scope: #{scope}")
-        scope_completions(context.last, scope.self_and_ancestors)
+        code_scope ||= context_scope
+        RubyLanguageServer.logger.debug("code_scope: #{code_scope}")
+        scope_completions(context.last, code_scope.self_and_ancestors)
       end
 
       def scope_completions(word, scopes)
         words = {}
-        scopes.each_with_object(words) do |scope, words_hash|
-          scope.children.select(&:'method?').each do |method_scope|
+        scopes.each_with_object(words) do |code_scope, words_hash|
+          code_scope.children.select(&:'method?').each do |method_scope|
             words_hash[method_scope.name] ||= {
-              depth: scope.depth,
-              type: method_scope.type
+              depth: code_scope.depth,
+              type: method_scope.kind
             }
           end
-          scope.variables.each do |variable|
+          code_scope.variables.each do |variable|
             words_hash[variable.name] ||= {
-              depth: scope.depth,
-              type: variable.type
+              depth: code_scope.depth,
+              type: variable.kind
             }
           end
         end

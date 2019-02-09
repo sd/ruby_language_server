@@ -2,11 +2,13 @@
 
 require 'active_record'
 require_relative 'scope_data/base'
-require_relative 'scope_data/scope'
+require_relative 'scope_data/code_scope'
 require_relative 'scope_data/variable'
 
 module RubyLanguageServer
   class CodeFile < ActiveRecord::Base
+    has_many :code_scopes, class_name: 'ScopeData::CodeScope', inverse_of: :code_file
+
     attr_accessor :uri
     attr_accessor :text
     attr_reader :lint_found
@@ -18,7 +20,13 @@ module RubyLanguageServer
         return
       end
       @text = new_text
-      @refresh_root_scope = true
+
+      new_root_scope = ScopeParser.new(text).root_scope
+      unless new_root_scope.children.empty?
+        self.code_scopes = new_root_scope.self_and_descendants
+        @tags = nil
+      end
+      save!
     end
 
     SYMBOL_KIND = {
@@ -43,9 +51,9 @@ module RubyLanguageServer
       array: 18
     }.freeze
 
-    # Find the ancestor of this scope with a name and return that.  Or nil.
-    def ancestor_scope_name(scope)
-      return_scope = scope
+    # Find the ancestor of this code_scope with a name and return that.  Or nil.
+    def ancestor_scope_name(code_scope)
+      return_scope = code_scope
       while (return_scope = return_scope.parent)
         return return_scope.name unless return_scope.name.nil?
       end
@@ -56,22 +64,23 @@ module RubyLanguageServer
       return @tags = {} if text.nil? || text == ''
 
       tags = []
-      root_scope.self_and_descendants.each do |scope|
-        next if scope.type == ScopeData::Base::TYPE_BLOCK
+      byebug
+      root_scope.self_and_descendants.each do |code_scope|
+        next if code_scope.kind == ScopeData::Base::KIND_BLOCK
 
-        name = scope.name
-        kind = SYMBOL_KIND[scope.type] || 7
+        name = code_scope.name
+        kind = SYMBOL_KIND[code_scope.kind&.to_sym] || 7
         kind = 9 if name == 'initialize' # Magical special case
         scope_hash = {
           name: name,
           kind: kind,
-          location: Location.hash(uri, scope.top_line)
+          location: Location.hash(uri, code_scope.top_line)
         }
-        container_name = ancestor_scope_name(scope)
+        container_name = ancestor_scope_name(code_scope)
         scope_hash[:containerName] = container_name if container_name
         tags << scope_hash
 
-        scope.variables.each do |variable|
+        code_scope.variables.each do |variable|
           name = variable.name
           # We only care about counstants
           next unless name =~ /^[A-Z]/
@@ -80,7 +89,7 @@ module RubyLanguageServer
             name: name,
             kind: SYMBOL_KIND[:constant],
             location: Location.hash(uri, variable.line),
-            containerName: scope.name
+            containerName: code_scope.name
           }
           tags << variable_hash
         end
@@ -108,16 +117,17 @@ module RubyLanguageServer
 
     def root_scope
       # RubyLanguageServer.logger.error("Asking about root_scope with #{text}")
-      if @refresh_root_scope
-        new_root_scope = ScopeParser.new(text).root_scope
-        @root_scope ||= new_root_scope # In case we had NONE
-        return @root_scope if new_root_scope.children.empty?
-
-        @root_scope = new_root_scope
-        @refresh_root_scope = false
-        @tags = nil
-      end
-      @root_scope
+      # if @refresh_root_scope
+      #   new_root_scope = ScopeParser.new(text).root_scope
+      #   @root_scope ||= new_root_scope # In case we had NONE
+      #   return @root_scope if new_root_scope.children.empty?
+      #   self.code_scopes = @root_scope.self_and_descendants
+      #
+      #   @root_scope = new_root_scope
+      #   @refresh_root_scope = false
+      #   @tags = nil
+      # end
+      code_scopes.where(parent: nil).first
     end
 
     # Returns the context of what is being typed in the given line

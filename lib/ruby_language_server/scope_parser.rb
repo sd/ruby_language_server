@@ -9,7 +9,7 @@ require_relative 'scope_parser_commands/rails_commands'
 module RubyLanguageServer
   # This class is responsible for processing the generated sexp from the ScopeParser below.
   # It builds scopes that amount to heirarchical arrays with information about what
-  # classes, methods, variables, etc - are in each scope.
+  # classes, methods, variables, etc - are in each code_scope.
   class SEXPProcessor
     include ScopeParserCommands::RakeCommands
     include ScopeParserCommands::RspecCommands
@@ -94,36 +94,36 @@ module RubyLanguageServer
     end
 
     def on_module(args, rest)
-      scope = add_scope(args.last, rest, ScopeData::Scope::TYPE_MODULE)
-      assign_subclass(scope, rest)
+      code_scope = add_scope(args.last, rest, ScopeData::CodeScope::KIND_MODULE)
+      assign_subclass(code_scope, rest)
     end
 
     def on_class(args, rest)
-      scope = add_scope(args.last, rest, ScopeData::Scope::TYPE_CLASS)
-      assign_subclass(scope, rest)
+      code_scope = add_scope(args.last, rest, ScopeData::CodeScope::KIND_CLASS)
+      assign_subclass(code_scope, rest)
     end
 
-    def assign_subclass(scope, sexp)
+    def assign_subclass(code_scope, sexp)
       return unless !sexp[0].nil? && sexp[0][0] == :var_ref
 
       (_, (_, name)) = sexp[0]
-      scope.superclass_name = (name)
+      code_scope.superclass_name = name
     end
 
     def on_method_add_block(args, rest)
-      scope = @current_scope
+      code_scope = @current_scope
       process(args)
       process(rest)
-      # add_scope(args, rest, ScopeData::Scope::TYPE_BLOCK)
-      unless @current_scope == scope
-        scope.bottom_line = [scope&.bottom_line, @current_scope.bottom_line].compact.max
+      # add_scope(args, rest, ScopeData::CodeScope::KIND_BLOCK)
+      unless @current_scope == code_scope
+        code_scope.bottom_line = [code_scope&.bottom_line, @current_scope.bottom_line].compact.max
         pop_scope
       end
     end
 
     def on_do_block(args, rest)
       ((_, ((_, (_, (_, _name, (line, column))))))) = args
-      push_scope(ScopeData::Scope::TYPE_BLOCK, nil, line, column, false)
+      push_scope(ScopeData::CodeScope::KIND_BLOCK, nil, line, column, false)
       process(args)
       process(rest)
       pop_scope
@@ -147,7 +147,7 @@ module RubyLanguageServer
     end
 
     def on_def(args, rest)
-      add_scope(args, rest, ScopeData::Scope::TYPE_METHOD)
+      add_scope(args, rest, ScopeData::CodeScope::KIND_METHOD)
     end
 
     # def self.something(par)...
@@ -179,11 +179,10 @@ module RubyLanguageServer
       (_, name, (line, _column)) = args
 
       method_name = "on_#{name}_command"
-      if respond_to? method_name
-        return send(method_name, line, args, rest)
-      else
-        RubyLanguageServer.logger.debug("We don't have a #{method_name} with #{args}")
-      end
+
+      return send(method_name, line, args, rest) if respond_to? method_name
+
+      RubyLanguageServer.logger.debug("We don't have a #{method_name} with #{args}")
 
       case name
       when 'public', 'private', 'protected'
@@ -229,8 +228,8 @@ module RubyLanguageServer
           end
 
           [:def_with_access, klass, method_name, access, line]
-          # when 'scope', 'named_scope'
-          #   [:rails_def, :scope, args[1][0], line]
+          # when 'code_scope', 'named_scope'
+          #   [:rails_def, :code_scope, args[1][0], line]
           # when /^attr_(accessor|reader|writer)$/
           #   gen_reader = Regexp.last_match(1) != 'writer'
           #   gen_writer = Regexp.last_match(1) != 'reader'
@@ -267,45 +266,46 @@ module RubyLanguageServer
 
     private
 
-    def add_variable(name, line, column, scope = @current_scope)
-      new_variable = ScopeData::Variable.new(scope, name, line, column)
+    def add_variable(name, line, column, code_scope = @current_scope)
+      new_variable = ScopeData::Variable.create!(code_scope: code_scope, name: name, line: line, column: column)
       # blocks don't declare their first line in the parser
-      scope.top_line ||= line
-      scope.variables << new_variable unless scope.has_variable_or_constant?(new_variable)
+      code_scope.top_line ||= line
+      code_scope.variables << new_variable unless code_scope.has_variable_or_constant?(new_variable)
     end
 
     def add_ivar(name, line, column)
-      scope = @current_scope
-      unless scope == root_scope
-        ivar_scope_types = [ScopeData::Base::TYPE_CLASS, ScopeData::Base::TYPE_MODULE]
-        while !ivar_scope_types.include?(scope.type) && !scope.parent.nil?
-          scope = scope.parent
+      code_scope = @current_scope
+      unless code_scope == root_scope
+        ivar_kinds = [ScopeData::Base::KIND_CLASS, ScopeData::Base::KIND_MODULE]
+        while !ivar_kinds.include?(code_scope.kind) && !code_scope.parent.nil?
+          code_scope = code_scope.parent
         end
       end
-      add_variable(name, line, column, scope)
+      add_variable(name, line, column, code_scope)
     end
 
     def add_scope(args, rest, type)
       (_, name, (line, column)) = args
-      scope = push_scope(type, name, line, column)
+      code_scope = push_scope(type, name, line, column)
       process(rest)
       pop_scope
-      scope
+      code_scope
     end
 
     def type_is_class_or_module(type)
-      [RubyLanguageServer::ScopeData::Base::TYPE_CLASS, RubyLanguageServer::ScopeData::Base::TYPE_MODULE].include?(type)
+      [RubyLanguageServer::ScopeData::Base::KIND_CLASS, RubyLanguageServer::ScopeData::Base::KIND_MODULE].include?(type)
     end
 
     def push_scope(type, name, top_line, column, close_siblings = true)
       close_sibling_scopes(top_line) if close_siblings
-      # The default root scope is Object.  Which is fine if we're adding methods.
+      # The default root code_scope is Object.  Which is fine if we're adding methods.
       # But if we're adding a class, we don't care that it's in Object.
+      byebug if type == ScopeData::CodeScope::KIND_BLOCK
       new_scope =
         if (type_is_class_or_module(type) && (@current_scope == root_scope))
-          ScopeData::Scope.new(nil, type, name, top_line, column)
+          ScopeData::CodeScope.new(kind: type, name: name, top_line: top_line, column: column)
         else
-          ScopeData::Scope.new(@current_scope, type, name, top_line, column)
+          ScopeData::CodeScope.new(parent: @current_scope, kind: type, name: name, top_line: top_line, column: column)
         end
       new_scope.bottom_line = @lines
       if new_scope.parent.nil? # was it a class or module at the root
@@ -317,10 +317,10 @@ module RubyLanguageServer
     end
 
     # This is a very poor man's "end" handler because there is no end handler.
-    # The notion is that when you start the next scope, all the previous peers and unclosed descendents of the previous peer should be closed.
+    # The notion is that when you start the next code_scope, all the previous peers and unclosed descendents of the previous peer should be closed.
     def close_sibling_scopes(line)
-      parent_scope = @current_scope
-      parent_scope&.descendants&.each { |scope| scope.bottom_line = [scope.bottom_line, line - 1].compact.min }
+      parent = @current_scope
+      parent&.descendants&.each { |code_scope| code_scope.bottom_line = [code_scope.bottom_line, line - 1].compact.min }
     end
 
     def pop_scope
@@ -328,9 +328,9 @@ module RubyLanguageServer
     end
 
     def new_root_scope
-      ScopeData::Scope.new.tap do |scope|
-        scope.type = ScopeData::Scope::TYPE_ROOT
-        scope.name = nil
+      ScopeData::CodeScope.new do |code_scope|
+        code_scope.kind = ScopeData::CodeScope::KIND_ROOT
+        code_scope.name = nil
       end
     end
   end

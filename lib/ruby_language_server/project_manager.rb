@@ -60,8 +60,8 @@ module RubyLanguageServer
     end
 
     def code_file_for_uri(uri, text = nil)
-      code_file = @uri_code_file_hash[uri]
-      code_file = @uri_code_file_hash[uri] = CodeFile.create!(uri: uri, text: text) if code_file.nil?
+      code_file = CodeFile.where(uri: uri).first_or_create!
+      code_file.text = text unless text.nil?
       code_file
     end
 
@@ -79,13 +79,15 @@ module RubyLanguageServer
     end
 
     def all_scopes
-      @uri_code_file_hash.values.map(&:root_scope).map(&:self_and_descendants).flatten
+      CodeScope.all.to_a
+      # @uri_code_file_hash.values.map(&:root_scope).map(&:self_and_descendants).flatten
     end
 
     # Return the list of scopes [deepest, parent, ..., Object]
     def scopes_at(uri, position)
-      root_scope = root_scope_for(uri)
-      root_scope.scopes_at(position)
+      # root_scope = root_scope_for(uri)
+      # root_scope.scopes_at(position)
+      CodeFile.where(uri: uri).postition_inside(position)
     end
 
     def completion_at(uri, position)
@@ -191,7 +193,6 @@ module RubyLanguageServer
         RubyLanguageServer.logger.debug("update_document_content: #{uri}")
         # RubyLanguageServer.logger.error("@root_path: #{@root_path}")
         code_file = code_file_for_uri(uri, text)
-        code_file.text = text
         diagnostics_ready? ? code_file.diagnostics : []
       end
     end
@@ -211,23 +212,23 @@ module RubyLanguageServer
       return {} if name == ''
 
       name = 'initialize' if name == 'new'
-      scope = scopes_at(uri, position).first
-      results = scope_definitions_for(name, scope, uri)
+      code_scope = scopes_at(uri, position).first
+      results = scope_definitions_for(name, code_scope, uri)
       return results unless results.empty?
 
-      project_definitions_for(name, scope)
+      project_definitions_for(name, code_scope)
     end
 
-    def scope_definitions_for(name, scope, uri)
-      check_scope = scope
+    def scope_definitions_for(name, code_scope, uri)
+      check_scope = code_scope
       return_array = []
       while check_scope
-        scope.variables.each do |variable|
+        code_scope.variables.each do |variable|
           return_array << Location.hash(uri, variable.line) if variable.name == name
         end
         check_scope = check_scope.parent
       end
-      RubyLanguageServer.logger.debug("scope_definitions_for(#{name}, #{scope}, #{uri}: #{return_array.uniq})")
+      RubyLanguageServer.logger.debug("scope_definitions_for(#{name}, #{code_scope}, #{uri}: #{return_array.uniq})")
       return_array.uniq
     end
 

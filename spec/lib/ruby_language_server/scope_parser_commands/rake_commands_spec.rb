@@ -36,7 +36,7 @@ describe RubyLanguageServer::ScopeParserCommands::RakeCommands do
     it 'should find namespaces and their tasks' do
       # The first child is the task, the second one is the block of the task.
       # This is not a great test.
-      namespace_scope = scope_parser.root_scope.self_and_descendants.detect { |scope| scope.name == 'cadet' }
+      namespace_scope = scope_parser.root_scope.self_and_descendants.detect { |code_scope| code_scope.name == 'cadet' }
       refute_nil(namespace_scope)
       assert_equal(['something:'], namespace_scope.descendants.map(&:name).compact)
     end

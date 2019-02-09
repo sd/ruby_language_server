@@ -55,7 +55,7 @@ describe RubyLanguageServer::ScopeParser do
       end
     end
 
-    it 'should have a root scope' do
+    it 'should have a root code_scope' do
       refute_nil(@parser.root_scope)
     end
 

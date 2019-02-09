@@ -17,6 +17,7 @@
 #
 # and, you'll have to watch "config/Guardfile" instead of "Guardfile"
 
+clearing :on
 group :red_green_refactor, halt_on_fail: true do
   guard :minitest, all_after_pass: true do
     # with Minitest::Unit

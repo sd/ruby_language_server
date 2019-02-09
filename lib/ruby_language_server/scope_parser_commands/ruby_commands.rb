@@ -12,9 +12,9 @@ module RubyLanguageServer
       #   # [[:args_add_block, [[:symbol_literal, [:symbol, [:@ident, "top", [3, 14]]]]], false]]
       #   ((_, ((_, (_, (_, name, (line, column))))))) = rest
       #   add_ivar("@#{name}", line, column)
-      #   push_scope(ScopeData::Scope::TYPE_METHOD, name, line, column)
+      #   push_scope(ScopeData::CodeScope::KIND_METHOD, name, line, column)
       #   pop_scope
-      #   push_scope(ScopeData::Scope::TYPE_METHOD, "#{name}=", line, column)
+      #   push_scope(ScopeData::CodeScope::KIND_METHOD, "#{name}=", line, column)
       #   pop_scope
 
       def on_attr_command(line, args, rest)
@@ -56,11 +56,11 @@ module RubyLanguageServer
       def ruby_command_add_attr(line, column, names, reader, writer)
         names.each do |name|
           if reader
-            push_scope(RubyLanguageServer::ScopeData::Base::TYPE_METHOD, name, line, column)
+            push_scope(RubyLanguageServer::ScopeData::Base::KIND_METHOD, name, line, column)
             pop_scope
           end
           if writer
-            push_scope(RubyLanguageServer::ScopeData::Base::TYPE_METHOD, "#{name}=", line, column)
+            push_scope(RubyLanguageServer::ScopeData::Base::KIND_METHOD, "#{name}=", line, column)
             pop_scope
           end
         end

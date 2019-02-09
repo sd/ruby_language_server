@@ -8,11 +8,11 @@ module RubyLanguageServer
         # The most reliable way I can see to name them is to grab the string
         # I *so* do not want to hear about it when it doesn't work.
         name = rest.flatten.detect { |o| o.instance_of?(String) }
-        # add_scope(args, rest, ScopeData::Scope::TYPE_METHOD)
-        push_scope(ScopeData::Scope::TYPE_MODULE, name, line, 0, false)
+        # add_scope(args, rest, ScopeData::CodeScope::KIND_METHOD)
+        push_scope(ScopeData::CodeScope::KIND_MODULE, name, line, 0, false)
         process(args)
         process(rest)
-        # We push a scope and don't pop it because we're called inside on_method_add_block
+        # We push a code_scope and don't pop it because we're called inside on_method_add_block
       end
 
       def on_namespace_command(line, args, rest)
@@ -20,11 +20,11 @@ module RubyLanguageServer
         # The most reliable way I can see to name them is to grab the string
         # I *so* do not want to hear about it when it doesn't work.
         name = rest.flatten.detect { |o| o.instance_of?(String) }
-        # add_scope(args, rest, ScopeData::Scope::TYPE_METHOD)
-        push_scope(ScopeData::Scope::TYPE_MODULE, name, line, 0, false)
+        # add_scope(args, rest, ScopeData::CodeScope::KIND_METHOD)
+        push_scope(ScopeData::CodeScope::KIND_MODULE, name, line, 0, false)
         process(args)
         process(rest)
-        # We push a scope and don't pop it because we're called inside on_method_add_block
+        # We push a code_scope and don't pop it because we're called inside on_method_add_block
       end
     end
   end

@@ -41,7 +41,7 @@ describe RubyLanguageServer::Completion do
 
   let(:Completion) { RubyLanguageServer::Completion }
   let(:all_scopes) { @scope_parser.root_scope.self_and_descendants }
-  let(:nar_naz_scope) { all_scopes.detect { |scope| scope.full_name == 'Foo::Nar#naz' } }
+  let(:nar_naz_scope) { all_scopes.detect { |code_scope| code_scope.full_name == 'Foo::Nar#naz' } }
 
   describe 'no context' do
     it 'should find the appropriate stuff from inside Foo::Bar' do
@@ -62,7 +62,7 @@ describe RubyLanguageServer::Completion do
   end
 
   describe 'scope_completions' do
-    it 'should not leak block variables to the parent scope' do
+    it 'should not leak block variables to the parent code_scope' do
       context = ['iter']
       context_scope = nar_naz_scope
       completions = RubyLanguageServer::Completion.scope_completions(context, context_scope.self_and_ancestors)
