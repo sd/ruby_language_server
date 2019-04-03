@@ -28,7 +28,7 @@ describe RubyLanguageServer::CodeFile do
       let(:tags) { code_file(source).tags }
 
       def code_file(text)
-        RubyLanguageServer::CodeFile.new('uri', text)
+        RubyLanguageServer::CodeFile.new('uri', text, 'project/path/file.rb')
       end
 
       it 'should find classes' do

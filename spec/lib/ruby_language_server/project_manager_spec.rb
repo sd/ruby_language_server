@@ -7,11 +7,23 @@ describe RubyLanguageServer::ProjectManager do
   before do
   end
 
-  let(:pm) { RubyLanguageServer::ProjectManager.new('foo') }
+  let(:pm) { RubyLanguageServer::ProjectManager.new('file:///foo/klam/') }
 
   describe 'ProjectManager' do
     it 'must init' do
       refute_nil(pm)
+    end
+  end
+
+  describe '.project_path' do
+    it 'should deal with nil' do
+      assert_equal('', pm.project_path(nil))
+    end
+
+    it 'should strip the root path' do
+      project_path = 'bar/baz.rb'
+      uri = [pm.root_uri, project_path].join('')
+      assert_equal(project_path, pm.project_path(uri))
     end
   end
 

@@ -9,12 +9,14 @@ module RubyLanguageServer
     attr_reader :uri
     attr_reader :text
     attr_reader :lint_found
+    attr_reader :project_path
 
-    def initialize(uri, text)
+    def initialize(uri, text, project_path = '')
       RubyLanguageServer.logger.debug("CodeFile initialize #{uri}")
       @uri = uri
       @text = text
       @refresh_root_scope = true
+      @project_path = project_path
     end
 
     def text=(new_text)
@@ -109,7 +111,7 @@ module RubyLanguageServer
     def diagnostics
       # Maybe we should be sharing this GoodCop across instances
       @good_cop ||= GoodCop.new
-      @good_cop.diagnostics(@text, @uri)
+      @good_cop.diagnostics(@text, @project_path)
     end
 
     def root_scope
