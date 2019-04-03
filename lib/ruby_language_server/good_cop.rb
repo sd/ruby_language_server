@@ -84,7 +84,8 @@ module RubyLanguageServer
       end
     end
 
-    def diagnostics(text, filename = nil)
+    def diagnostics(text, filename)
+      RubyLanguageServer.logger.error("diagnostics filename: #{filename}")
       return initialization_offenses unless @initialization_error.nil?
 
       maximum_severity = (ENV['LINT_LEVEL'] || 4).to_i

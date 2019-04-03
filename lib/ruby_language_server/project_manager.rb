@@ -6,6 +6,7 @@ FuzzyMatch.engine = :amatch # This should be in a config somewhere
 
 module RubyLanguageServer
   class ProjectManager
+    attr_reader :root_uri
     attr_reader :uri_code_file_hash
 
     def initialize(uri)
@@ -19,6 +20,12 @@ module RubyLanguageServer
       @additional_gem_mutex = Mutex.new
 
       scan_all_project_files
+    end
+
+    def project_path(uri)
+      return '' if uri.nil?
+
+      uri.sub(@root_uri, '')
     end
 
     def diagnostics_ready?
@@ -39,7 +46,7 @@ module RubyLanguageServer
 
     def code_file_for_uri(uri, text = nil)
       code_file = @uri_code_file_hash[uri]
-      code_file = @uri_code_file_hash[uri] = CodeFile.new(uri, text) if code_file.nil?
+      code_file = @uri_code_file_hash[uri] = CodeFile.new(uri, text, project_path(uri)) if code_file.nil?
       code_file
     end
 
